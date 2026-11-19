@@ -6,7 +6,7 @@ A lightweight, end-to-end testing suite for Python Celery features with a TypeSc
 
 ## Architecture Overview
 
-Strict **3-Layer Architecture** (`Presentation` -> `Business Logic` -> `Data Access`) enforced without path aliases:
+Strict **3-Layer Architecture** (`Presentation` -> `Business Logic` -> `Data Access`):
 
 ```text
 ├── client/                     # Simple client curl scripts and documentation
