@@ -1,7 +1,7 @@
 # Stage 1: Base with pnpm enabled
-FROM node:22-alpine AS base
+FROM node:26-alpine AS base
 WORKDIR /app
-RUN corepack enable && corepack prepare pnpm@latest --activate
+RUN npm install -g pnpm
 
 # Stage 2: Install all dependencies and compile TypeScript
 FROM base AS builder
@@ -17,7 +17,7 @@ COPY package.json pnpm-lock.yaml* pnpm-workspace.yaml* .npmrc* ./
 RUN pnpm install --prod --frozen-lockfile || pnpm install --prod
 
 # Stage 4: Minimal production runtime image
-FROM node:22-alpine AS runner
+FROM node:26-alpine AS runner
 WORKDIR /app
 
 ENV PORT=3000
