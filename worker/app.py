@@ -70,7 +70,7 @@ def process_message_one(self, message: Dict[str, str]):
         # ALWAYS ACK: Celery's parent process transmits the AMQP basic.ack to RabbitMQ
         print(f"[CELERY WORKER ONE ACKED]: Task {task_id} acknowledged (Always ACK, Never NACK)", flush=True)
         sys.stdout.flush()
-        return {"status": status, "task": "process_message_one", "message": message}
+    return {"status": status, "task": "process_message_one", "message": message}
 
 
 @app.task(bind=True, name="process_message_two", acks_late=True, reject_on_worker_lost=True)
@@ -94,7 +94,7 @@ def process_message_two(self, message: Dict[str, str]):
         # ALWAYS ACK: Celery's parent process transmits the AMQP basic.ack to RabbitMQ
         print(f"[CELERY WORKER TWO ACKED]: Task {task_id} acknowledged (Always ACK, Never NACK)", flush=True)
         sys.stdout.flush()
-        return {"status": status, "task": "process_message_two", "message": message}
+    return {"status": status, "task": "process_message_two", "message": message}
 
 
 if __name__ == "__main__":
