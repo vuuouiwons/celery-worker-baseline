@@ -6,10 +6,10 @@ WORKDIR /app
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
 # Copy dependency specifications
-COPY package.json pnpm-lock.yaml* ./
+COPY package.json pnpm-lock.yaml* pnpm-workspace.yaml* .npmrc* ./
 
 # Install dependencies without running untrusted build scripts
-RUN pnpm install --frozen-lockfile --ignore-scripts || pnpm install --ignore-scripts
+RUN pnpm install --frozen-lockfile || pnpm install
 
 # Copy source code and config
 COPY tsconfig.json ./
@@ -23,4 +23,4 @@ EXPOSE 3000
 ENV PORT=3000
 ENV NODE_ENV=production
 
-CMD ["node", "dist/index.js"]
+CMD ["node", "dist/main.js"]

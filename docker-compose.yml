@@ -18,7 +18,7 @@ services:
     build:
       context: ./server
       dockerfile: Dockerfile
-    container_name: hono-server
+    container_name: nestjs-server
     ports:
       - "127.0.0.1:3000:3000"
     environment:

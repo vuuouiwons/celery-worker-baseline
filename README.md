@@ -1,37 +1,39 @@
 # Celery Feature Tester
 
-A lightweight, end-to-end testing suite for Python Celery features with a TypeScript Hono backend, RabbitMQ message broker, and Python Celery worker.
+A lightweight, end-to-end testing suite for Python Celery features with a TypeScript NestJS backend, RabbitMQ message broker, and Python Celery worker.
 
 ---
 
 ## Architecture Overview
 
-Strict **3-Layer Architecture** (`Presentation` -> `Business Logic` -> `Data Access`):
+Official **NestJS Modular Architecture** (`Modules` -> `Controllers` -> `Services` -> `Providers`):
 
 ```text
 ├── client/                     # Simple client curl scripts and documentation
-│   ├── publish.sh              # Shell script for /message/publish (Task One)
-│   ├── publish.bat             # Windows CMD script for /message/publish (Task One)
+│   ├── publish-one.sh          # Shell script for /message/publish-one (Task One)
+│   ├── publish-one.bat         # Windows CMD script for /message/publish-one (Task One)
 │   ├── publish-two.sh          # Shell script for /message/publish-two (Task Two)
 │   ├── publish-two.bat         # Windows CMD script for /message/publish-two (Task Two)
 │   └── README.md
-├── server/                     # Hono backend (managed via pnpm)
+├── server/                     # NestJS backend (managed via pnpm)
 │   ├── Dockerfile
 │   ├── package.json
 │   ├── tsconfig.json
 │   └── src/
-│       ├── presentation/       # MessageController, MessageRoutes, Request/Response DTOs
-│       ├── business/           # MessageService, Message domain model, IMessageQueueRepository
-│       ├── data/               # RabbitMQMessageRepository (Celery v2 protocol publisher)
-│       ├── shared/             # Custom errors, queue constants (TASK_NAME_ONE, TASK_NAME_TWO)
-│       └── index.ts            # Composition root & HTTP server entrypoint
+│       ├── main.ts             # NestJS bootstrap, ValidationPipe, ExceptionFilter, Swagger
+│       ├── app.module.ts       # Root application module
+│       ├── app.controller.ts   # Root info controller
+│       ├── app.service.ts      # Root service
+│       ├── common/             # Shared constants, custom exceptions, HttpExceptionFilter
+│       ├── rabbitmq/           # RabbitmqModule & RabbitmqService (Celery v2 AMQP publisher)
+│       └── message/            # MessageModule, MessageController, MessageService, dto/, interfaces/
 ├── worker/                     # Python Celery worker (managed via uv)
 │   ├── Dockerfile
 │   ├── pyproject.toml
 │   ├── uv.lock
 │   └── app.py                  # Celery application, process_message_one & process_message_two tasks
 ├── docker-compose.yml          # Multi-container orchestration
-└── AGENTS.md                   # Architectural guidelines & conventions
+└── AGENTS.md                   # Official NestJS architectural guidelines & conventions
 ```
 
 ---

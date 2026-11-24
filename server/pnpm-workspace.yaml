@@ -1,2 +1,5 @@
-allowBuilds:
-  esbuild: true
+strictDepBuilds: false
+ignoredBuiltDependencies:
+  - "@nestjs/core"
+  - "@scarf/scarf"
+  - esbuild

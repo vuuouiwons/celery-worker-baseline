@@ -1,5 +1,6 @@
 import os
 import sys
+from typing import Dict
 from celery import Celery
 from celery.utils.log import get_task_logger
 from kombu import Exchange, Queue
@@ -24,7 +25,7 @@ maximum_prefetch = int(
 
 app.conf.update(
     # Serialization & Security
-    task_serializer="json",  # Format for serializing task payloads (JSON ensures Node.js / Hono compatibility)
+    task_serializer="json",  # Format for serializing task payloads (JSON ensures Node.js / NestJS compatibility)
     accept_content=["json"],  # Whitelist of allowed payload formats to accept (blocks insecure formats like pickle)
     result_serializer="json",  # Format used to store return values in the result backend
     # Timezone Settings
@@ -49,14 +50,15 @@ app.conf.update(
 
 
 @app.task(bind=True, name="process_message_one", acks_late=True, reject_on_worker_lost=True)
-def process_message_one(self, message):
+def process_message_one(self, message: Dict[str, str]):
     """
-    Task one to process incoming messages published by the Hono server.
+    Task one to process incoming messages published by the NestJS server.
     """
     task_id = self.request.id or "unknown"
     status = "SUCCESS"
     try:
-        output = f"[CELERY WORKER ONE RECEIVED]: {message}"
+        content = message.get("message", "")
+        output = f"[CELERY WORKER ONE RECEIVED]: {content}"
         print(output, flush=True)
         sys.stdout.flush()
 
@@ -72,14 +74,15 @@ def process_message_one(self, message):
 
 
 @app.task(bind=True, name="process_message_two", acks_late=True, reject_on_worker_lost=True)
-def process_message_two(self, message):
+def process_message_two(self, message: Dict[str, str]):
     """
-    Task two to process incoming messages published by the Hono server.
+    Task two to process incoming messages published by the NestJS server.
     """
     task_id = self.request.id or "unknown"
     status = "SUCCESS"
     try:
-        output = f"[CELERY WORKER TWO RECEIVED]: {message}"
+        content = message.get("message", "")
+        output = f"[CELERY WORKER TWO RECEIVED]: {content}"
         print(output, flush=True)
         sys.stdout.flush()
 

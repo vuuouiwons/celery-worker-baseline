@@ -1,64 +1,72 @@
-```
-# AGENTS.md — 3-Layer Architecture & Coding Conventions
+# AGENTS.md — Official NestJS Architecture & Coding Conventions
 
 ## Project Overview
-This codebase strictly enforces a **3-Layer Architecture** (`Presentation` -> `Business Logic` -> `Data Access`). All generated, refactored, or reviewed code must adhere to these architectural boundaries, naming conventions, and dependency rules.
+This codebase strictly follows the **official NestJS documentation architecture** (`Modules`, `Controllers`, `Providers/Services`, `DTOs`, `Interfaces`, and `Common` cross-cutting concerns). All generated, refactored, or reviewed server code must adhere to official NestJS conventions and module boundaries.
 
 ---
 
 ## Directory Structure
-Place all new files in their designated architectural layer:
+Follow the official NestJS feature-folder layout directly under `src/`:
 
 ```text
 src/
-├── presentation/       # Controllers, Routes, Middlewares, Request/Response DTOs
-├── business/           # Services, Domain Models, Business Rules, Repository Interfaces
-├── data/               # Repository Implementations, ORM Entities, Mappers, Migrations
-└── shared/             # Custom Domain Errors, Constants, Pure Utilities
+├── main.ts                                  # Application entry point (NestFactory, ValidationPipe, Filters, Swagger)
+├── app.module.ts                            # Root application module
+├── app.controller.ts                        # Root controller
+├── app.service.ts                           # Root service
+├── common/                                  # Shared cross-cutting concerns
+│   ├── constants/                           # Shared constants (e.g., queue.constants.ts)
+│   ├── exceptions/                          # Custom exceptions (e.g., app.exception.ts)
+│   ├── filters/                             # Exception filters (e.g., http-exception.filter.ts)
+│   ├── guards/                              # Guards (when needed)
+│   ├── interceptors/                        # Interceptors (when needed)
+│   ├── middleware/                          # Middleware (when needed)
+│   └── pipes/                               # Custom pipes (when needed)
+└── <feature>/                               # Feature modules directly under src/ (e.g., message/, rabbitmq/)
+    ├── <feature>.module.ts                  # @Module() declaring imports, controllers, providers, exports
+    ├── <feature>.controller.ts              # @Controller() handling HTTP requests & Swagger docs
+    ├── <feature>.service.ts                 # @Injectable() provider containing business/domain logic
+    ├── dto/                                 # Request & Response DTO classes (class-validator + @nestjs/swagger)
+    └── interfaces/                          # TypeScript interfaces for domain models & contracts
 ```
 
 ---
 
-## Strict Architectural & Dependency Rules
-1. **Unidirectional Dependency Flow:** Dependencies must only point downward: `Presentation` -> `Business` -> `Data`. Lower layers must **never** import from upper layers.
-2. **No Layer Skipping:** Presentation components (Controllers/Handlers) must **never** call Data Access components (Repositories/ORMs) directly, even for simple CRUD lookups. Always route through a Business Service.
-3. **No Cross-Layer Model Leakage:**
-   - **Data Layer** operates on ORM/Database entities and maps them to Domain Models before returning.
-   - **Business Layer** operates exclusively on Domain Models and primitives.
-   - **Presentation Layer** accepts Request DTOs and returns Response DTOs. Never expose database entities directly in API responses.
-4. **Dependency Inversion:** Business Services must depend on Repository interfaces defined in the Business layer (e.g., `IUserRepository`), never concrete Data layer classes.
+## Official NestJS Architectural Rules
+1. **Module Encapsulation:** Every domain feature or infrastructure integration is encapsulated in its own `@Module()` folder directly under `src/` (e.g., `src/message/`, `src/rabbitmq/`).
+2. **Explicit Imports & Exports:** Modules only share providers explicitly listed in their `exports` array. Feature modules import the modules whose providers they depend on (e.g., `MessageModule` imports `RabbitmqModule`).
+3. **Controller -> Service Separation:**
+   - Controllers (`*.controller.ts`) handle HTTP routing, request parsing, DTO validation, response mapping, and OpenAPI decorators.
+   - Controllers must **never** contain business logic or call infrastructure/database/broker clients directly.
+   - Services (`*.service.ts`) encapsulate business logic and orchestration, and must **never** depend on HTTP `Request`/`Response` objects.
+4. **DTOs & Validation:**
+   - Incoming payloads are typed as DTO classes in `dto/` decorated with `class-validator` and `@nestjs/swagger`, validated globally via `ValidationPipe`.
+   - Outgoing responses are mapped to Response DTOs rather than returning raw internal structures.
+5. **Exception Handling:**
+   - Use NestJS built-in `HttpException` subclasses or custom exceptions under `src/common/exceptions/`, handled uniformly by an `@Catch()` filter in `src/common/filters/`.
+6. **Lifecycle Hooks:**
+   - Infrastructure providers (e.g., RabbitMQ, database connections) implement NestJS lifecycle hooks (`OnModuleInit`, `OnModuleDestroy`) for clean initialization and graceful shutdown.
+7. **No Path Aliases:** Use standard relative imports across the codebase. Do not configure TypeScript `paths` aliases.
 
 ---
 
-## Layer-Specific Coding Conventions
-
-### 1. Presentation Layer (`src/presentation/`)
-* **Naming:** `[Entity]Controller.[ext]`, `[Entity]Routes.[ext]`, `[Action][Entity]Request.[ext]`, `[Entity]Response.[ext]`.
-* **Responsibilities:** Parse and validate incoming request payloads, invoke a single Business Service method, map the returned Domain Model to a Response DTO, and return the appropriate HTTP status code.
-* **Constraints:**
-  - Keep controller methods thin (ideally under 20 lines).
-  - **Forbidden:** Business logic, conditional domain rules, direct database/ORM calls.
-
-### 2. Business Logic Layer (`src/business/`)
-* **Naming:** `[Entity]Service.[ext]`, `[Workflow]UseCase.[ext]`, `[Entity].[ext]` (Domain Model), `I[Entity]Repository.[ext]`.
-* **Responsibilities:** Execute core business rules, calculations, multi-step workflows, and orchestrate calls across multiple repositories.
-* **Error Handling:** Throw domain-specific errors from `src/shared/errors` (e.g., `ConflictError`, `NotFoundError`, `ValidationError`). Let Presentation middleware translate these into HTTP status codes.
-* **Constraints:**
-  - **Forbidden:** HTTP-specific objects (`req`, `res`, headers, HTTP status codes) or database-specific imports (SQL queries, ORM decorators/clients).
-
-### 3. Data Access Layer (`src/data/`)
-* **Naming:** `[Entity]Repository.[ext]`, `[Entity]Entity.[ext]` (ORM model), `[Entity]Mapper.[ext]`.
-* **Responsibilities:** Encapsulate all database queries, ORM operations, caching, and external storage calls. Convert raw database records into Domain Models via Mappers before returning.
-* **Constraints:**
-  - **Forbidden:** Business validation or domain decision-making (e.g., checking user permissions or account eligibility inside SQL/ORM queries).
+## Naming Conventions
+* **Files:** `kebab-case` with NestJS role suffixes:
+  - `<name>.module.ts`
+  - `<name>.controller.ts`
+  - `<name>.service.ts`
+  - `<name>.dto.ts` (inside `dto/`)
+  - `<name>.interface.ts` (inside `interfaces/`)
+  - `<name>.filter.ts`, `<name>.guard.ts`, `<name>.pipe.ts`, `<name>.interceptor.ts` (inside `common/`)
+* **Classes:** `PascalCase` matching the file name (e.g., `MessageController`, `MessageService`, `RabbitmqService`, `PublishMessageDto`).
 
 ---
 
 ## Agent Workflow & Verification Checklist
 Before finalizing any code changes, verify the following:
-- [ ] Are imports strictly flowing downward (`presentation` -> `business` -> `data`)?
-- [ ] Are all database queries isolated inside `src/data/`?
-- [ ] Are all HTTP status codes and `req`/`res` objects isolated inside `src/presentation/`?
-- [ ] Are DTOs used at API boundaries instead of raw database entities?
-- [ ] Do new Services inject Repository interfaces rather than concrete classes?
-```
+- [ ] Does each feature/integration live in its own NestJS module folder directly under `src/`?
+- [ ] Are providers shared across modules via `@Module({ imports, exports })`?
+- [ ] Are controllers thin and delegating exclusively to services?
+- [ ] Are DTOs in `dto/` validated with `class-validator` and documented with `@nestjs/swagger`?
+- [ ] Are cross-cutting concerns (filters, exceptions, constants) placed in `src/common/`?
+- [ ] Are all imports standard relative paths with zero path aliases?
